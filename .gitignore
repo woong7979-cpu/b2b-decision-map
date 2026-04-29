@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.vercel/
+.DS_Store
+Thumbs.db
+*.log
+
+# Claude Code / OMC local state
+.claude/settings.local.json
+.omc/
+
+# PPT 다운로드/시연 산출물 (사용자가 brwoser에서 받은 것 또는 콘셉트 자료)
+*.pptx
+
+# 참고 자료 폴더 (개인 자료, public 푸시 금지)
+참고자료/

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>B2B 의사결정 구조도 자동 생성</title>
+  <meta name="description" content="미팅 노트를 입력하면 고객사 조직구조도 + 의사결정 영향맵 + MEDDIC 점검표를 자동 생성합니다." />
+  <link rel="stylesheet" href="/styles.css" />
+  <!-- pptxgenjs (PPT 내보내기용 — CDN, 약 200KB) -->
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>
+      🎯 B2B 의사결정 구조도 자동 생성
+      <span class="badge">v0.1 · MVP</span>
+    </h1>
+    <div class="actions">
+      <button class="btn" id="btn-sample">샘플 보기</button>
+      <button class="btn" id="btn-ppt">📥 PPT 내보내기</button>
+      <button class="btn" id="btn-clear">초기화</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 좌측: 입력 + MEDDIC 가이드 -->
+    <aside class="panel input-area">
+      <h2>📝 미팅 노트 입력</h2>
+      <textarea id="interview" placeholder="예) 2026-03-15 ABC전자 1차 미팅 — 김영업.
+이대표(대표이사)와 30분 미팅. 신규 솔루션 검토 의향 있음. 본격 추진은 정전무(CTO)와 협의하라고 함. 영업본부장 최본부장이 우리 편... (CRM 메모, 통화 기록, 자유 형식 모두 OK)"></textarea>
+      <div class="row">
+        <button class="btn primary" id="btn-analyze">🔍 분석하기</button>
+      </div>
+      <div class="status-msg" id="status"></div>
+
+      <h2 style="margin-top: 16px;">🎯 MEDDIC Discovery 점검</h2>
+      <ul class="guide-list" id="guide-list">
+        <li class="empty-state" style="background:none;border:none;">
+          분석을 실행하면 보강이 필요한 항목이 여기에 표시됩니다.
+        </li>
+      </ul>
+    </aside>
+
+    <!-- 우측: 시각화 -->
+    <section class="viz-stack">
+      <article class="viz-card">
+        <div class="head">
+          <h2>🏢 조직구조도 (Org Chart)</h2>
+          <span class="legend">보고 라인 + DMU 역할 + 우호도</span>
+        </div>
+        <div class="svg-wrap">
+          <svg id="orgchart" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="legend-box">
+          <div class="legend-section">
+            <span class="legend-title">DMU Roles</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#1E40AF"></span>Economic Buyer</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#0E7490"></span><strong>Decision Maker</strong> <small>(굵은 라인)</small></span>
+            <span class="legend-item"><span class="legend-dot" style="background:#059669"></span>Champion</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>Technical Buyer</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#7C3AED"></span>User Buyer</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#0891B2"></span>Coach</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#6B7280"></span>Gatekeeper</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#DC2626"></span>Blocker</span>
+          </div>
+          <div class="legend-section">
+            <span class="legend-title">Sentiment</span>
+            <span class="legend-item">🟢 Positive (우호)</span>
+            <span class="legend-item">⚪ Neutral (중립)</span>
+            <span class="legend-item">🟡 Caution (신중)</span>
+            <span class="legend-item">🔴 Negative (적대)</span>
+            <span class="legend-item">⚫ Unknown (미상)</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="viz-card">
+        <div class="head">
+          <h2>🎯 MEDDIC Discovery 점검표</h2>
+          <span class="legend">6요소 충족도 한눈에 — 미수집 항목은 빨간 테두리</span>
+        </div>
+        <div id="meddic-grid"></div>
+      </article>
+
+      <article class="viz-card">
+        <div class="head">
+          <h2>🌐 의사결정 영향맵 (Influence Map)</h2>
+          <span class="legend">자사 ↔ 고객사 + 외부 영향 (본사·경쟁·컨설팅·SI·도입사례·규제)</span>
+        </div>
+        <div class="svg-wrap">
+          <svg id="influencemap" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="legend-box">
+          <div class="legend-section">
+            <span class="legend-title">관계 톤</span>
+            <span class="legend-item">
+              <svg width="40" height="10"><line x1="0" y1="5" x2="40" y2="5" stroke="#059669" stroke-width="2.5"/></svg>
+              우호 · 동맹
+            </span>
+            <span class="legend-item">
+              <svg width="40" height="10"><line x1="0" y1="5" x2="40" y2="5" stroke="#9CA3AF" stroke-width="2.5" stroke-dasharray="6 4"/></svg>
+              중립 · 미약
+            </span>
+            <span class="legend-item">
+              <svg width="40" height="14">
+                <line x1="0" y1="7" x2="40" y2="7" stroke="#DC2626" stroke-width="2"/>
+                <line x1="6" y1="2" x2="6" y2="12" stroke="#DC2626" stroke-width="1.5"/>
+                <line x1="14" y1="2" x2="14" y2="12" stroke="#DC2626" stroke-width="1.5"/>
+                <line x1="22" y1="2" x2="22" y2="12" stroke="#DC2626" stroke-width="1.5"/>
+                <line x1="30" y1="2" x2="30" y2="12" stroke="#DC2626" stroke-width="1.5"/>
+              </svg>
+              긴장 · 갈등
+            </span>
+            <span class="legend-item">
+              <svg width="40" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#444" stroke-width="2"/><polygon points="34,1 40,5 34,9" fill="#444"/></svg>
+              영향 방향
+            </span>
+            <span class="legend-item">선 굵기 = 영향 강도</span>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    B2B 의사결정 구조도 · MEDDIC 기반 · 미팅 노트 자동 분석 · 데이터 비저장
+  </footer>
+
+  <script type="module">
+    import { renderOrgChart } from './src/render-orgchart.js';
+    import { renderInfluenceMap } from './src/render-influencemap.js';
+    import { checkMeddic } from './src/meddic-checker.js';
+    import { SAMPLE_CASES } from './src/sample-case.js';
+    import { exportToPPT } from './src/ppt-export.js';
+    import { renderMeddicGrid } from './src/render-meddic.js';
+
+    let currentData = null;  // PPT 내보내기용 마지막 분석 데이터
+
+    const $ = (sel) => document.querySelector(sel);
+    const interviewEl = $('#interview');
+    const statusEl = $('#status');
+    const guideList = $('#guide-list');
+    const orgSvg = $('#orgchart');
+    const ecoSvg = $('#influencemap');
+
+    function setStatus(msg, kind = 'info') {
+      statusEl.textContent = msg;
+      statusEl.className = `status-msg show ${kind}`;
+      if (!msg) statusEl.classList.remove('show');
+    }
+    function clearStatus() { statusEl.classList.remove('show'); }
+
+    function render(data) {
+      try {
+        currentData = data;  // PPT 내보내기용 저장
+        renderOrgChart(orgSvg, data);
+        renderMeddicGrid(document.getElementById('meddic-grid'), data);
+        renderInfluenceMap(ecoSvg, data);
+        const items = checkMeddic(data);
+        renderGuide(items);
+      } catch (err) {
+        console.error(err);
+        setStatus('렌더링 오류: ' + err.message, 'error');
+      }
+    }
+
+    function renderGuide(items) {
+      guideList.innerHTML = '';
+      if (!items.length) {
+        guideList.innerHTML = '<li class="empty-state" style="background:none;border:none;">✅ MEDDIC 6요소 + 핵심 인물·관계 모두 수집됨.</li>';
+        return;
+      }
+      items.sort((a, b) => (a.severity === 'high' ? -1 : 1) - (b.severity === 'high' ? -1 : 1));
+      for (const it of items) {
+        const li = document.createElement('li');
+        if (it.severity === 'high') li.classList.add('high');
+        const sev = document.createElement('span');
+        sev.className = 'sev';
+        sev.textContent = it.severity === 'high' ? '필수' : '권장';
+        const body = document.createElement('span');
+        body.className = 'body';
+        const strong = document.createElement('strong');
+        strong.textContent = it.label;
+        const span = document.createElement('span');
+        span.textContent = it.message;
+        body.appendChild(strong);
+        body.appendChild(span);
+        li.appendChild(sev);
+        li.appendChild(body);
+        guideList.appendChild(li);
+      }
+    }
+
+    let lastSampleIdx = -1;
+    function showSample(idx) {
+      const c = SAMPLE_CASES[idx];
+      interviewEl.value = c.interviewText;
+      setStatus(`📋 ${c.label}\n${c.description}`, 'success');
+      render(c.data);
+      lastSampleIdx = idx;
+    }
+    $('#btn-sample').addEventListener('click', () => {
+      let idx;
+      if (SAMPLE_CASES.length <= 1) idx = 0;
+      else { do { idx = Math.floor(Math.random() * SAMPLE_CASES.length); } while (idx === lastSampleIdx); }
+      showSample(idx);
+    });
+
+    // === PPT 내보내기 ===
+    $('#btn-ppt').addEventListener('click', async () => {
+      if (!currentData) {
+        setStatus('먼저 [샘플 보기] 또는 [분석하기]로 데이터를 불러와주세요.', 'error');
+        return;
+      }
+      $('#btn-ppt').disabled = true;
+      setStatus('PPT 생성 중...', 'info');
+      try {
+        const fname = await exportToPPT(currentData);
+        setStatus(`✅ PPT 다운로드 완료: ${fname}`, 'success');
+      } catch (err) {
+        console.error(err);
+        setStatus('PPT 생성 실패: ' + err.message, 'error');
+      } finally {
+        $('#btn-ppt').disabled = false;
+      }
+    });
+
+    $('#btn-clear').addEventListener('click', () => {
+      interviewEl.value = '';
+      clearStatus();
+      orgSvg.innerHTML = '';
+      ecoSvg.innerHTML = '';
+      guideList.innerHTML = '<li class="empty-state" style="background:none;border:none;">분석을 실행하면 보강이 필요한 항목이 여기에 표시됩니다.</li>';
+    });
+
+    $('#btn-analyze').addEventListener('click', async () => {
+      const text = interviewEl.value.trim();
+      if (!text) { setStatus('미팅 노트를 입력해주세요.', 'error'); return; }
+      setStatus('분석 중... (Claude API 호출)', 'info');
+      $('#btn-analyze').disabled = true;
+      try {
+        const res = await fetch('/api/parse', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const ctype = res.headers.get('content-type') || '';
+
+        if (!res.ok) {
+          // 로컬 정적 서버에서는 /api/parse 가 없어 404 + HTML 응답이 옴
+          if (res.status === 404 || !ctype.includes('json')) {
+            throw new Error(
+              '⚠️ 로컬 환경에서는 [분석하기]가 작동하지 않습니다.\n\n' +
+              '/api/parse 서버리스 함수는 Vercel 배포 환경에서만 동작합니다.\n' +
+              '· 로컬 시연: [샘플 보기] 버튼만 사용 가능\n' +
+              '· 실사용: GitHub → Vercel 배포 후 ANTHROPIC_API_KEY 환경변수 등록'
+            );
+          }
+          // JSON 에러 응답
+          let detail = '';
+          try {
+            const errObj = await res.json();
+            detail = errObj.error + (errObj.hint ? ' — ' + errObj.hint : '') +
+                     (errObj.detail ? '\n' + errObj.detail : '');
+          } catch {
+            detail = `HTTP ${res.status}`;
+          }
+          throw new Error(detail);
+        }
+        const data = await res.json();
+        render(data);
+        setStatus(`분석 완료 — ${data.company?.name || '고객사'} (${(data.people || []).length}명 식별)`, 'success');
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message, 'error');
+      } finally {
+        $('#btn-analyze').disabled = false;
+      }
+    });
+
+    // 페이지 로드 시 첫 케이스 렌더
+    showSample(0);
+  </script>
+</body>
+</html>

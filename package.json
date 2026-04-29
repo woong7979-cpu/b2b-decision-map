@@ -1,0 +1,15 @@
+{
+  "name": "b2b-decision-map",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "미팅 노트로 B2B 고객사 조직구조도 + 의사결정 영향맵 자동 생성",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0"
+  },
+  "engines": { "node": ">=20" }
+}
