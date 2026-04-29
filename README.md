@@ -17,30 +17,7 @@
 
 ---
 
-## 🚀 5분 배포
 
-### 1. GitHub 레포
-
-```powershell
-cd C:\Users\error\Desktop\B2B_의사결정도
-git init
-git add .
-git commit -m "init: B2B 의사결정 구조도 v0.1"
-gh repo create b2b-decision-map --public --source=. --push
-```
-
-### 2. Anthropic API 키
-[console.anthropic.com](https://console.anthropic.com/settings/keys) → Create Key → 복사
-
-### 3. Vercel 배포
-1. [vercel.com/new](https://vercel.com/new) → GitHub 레포 import
-2. Framework: **Other**
-3. Environment Variables: `ANTHROPIC_API_KEY` = `sk-ant-...`
-4. Deploy
-
-배포 완료 후 `https://<프로젝트>.vercel.app` URL 자동 생성.
-
----
 
 ## 🏷️ DMU 역할 (MEDDIC 기반)
 
